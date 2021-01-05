@@ -1,0 +1,124 @@
+; MIT License
+; Copyright (c) 2020 Kosaki Mezumona
+class Commands
+{
+	static PushEnter()
+	{
+		Send("{Enter}")
+	}
+
+	static StartSelection()
+	{
+		Send("{Shift Down}")
+	}
+
+	static EndSelection()
+	{
+		Send("{Shift Up}")
+	}
+
+	static DeleteForward()
+	{
+		Send("{BS}")
+	}
+
+	static DeleteBackward()
+	{
+		Send("{Del}")
+	}
+
+	static MoveUp()
+	{
+		Send("{Up}")
+	}
+
+	static MoveRight()
+	{
+		Send("{Right}")
+	}
+
+	static MoveDown()
+	{
+		Send("{Down}")
+	}
+
+	static MoveLeft()
+	{
+		Send("{Left}")
+	}
+
+	static MoveHead()
+	{
+		Send("{Home}")
+	}
+
+	static MoveTail()
+	{
+		Send("{End}")
+	}
+
+	static MoveNextPage()
+	{
+		Send("{PgDn}")
+	}
+
+	static MovePrevPage()
+	{
+		Send("{PgUp}")
+	}
+
+	static CopyClipBoard()
+	{
+		Send("^c")
+	}
+
+	static CutClipBoard()
+	{
+		Send("^x")
+	}
+
+	static PasteClipBoard()
+	{
+		Send("^v")
+	}
+
+	static SaveFile()
+	{
+		Send("^s")
+	}
+
+	static SaveFileAs()
+	{
+		Send("+^s")
+	}
+
+	static OpenFile()
+	{
+		Send("^o")
+	}
+
+	static SwitchNextTab()
+	{
+		Send("^{Tab}")
+	}
+
+	static SwitchPrevTab()
+	{
+		Send("^+{Tab}")
+	}
+
+	static CloseTab()
+	{
+		Send("^w")
+	}
+
+	static CloseWindow()
+	{
+		Send("!{F4}")
+	}
+
+	static Undo()
+	{
+		Send("^z")
+	}
+}

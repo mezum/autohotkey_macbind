@@ -1,0 +1,229 @@
+; MIT License
+; Copyright (c) 2020 Kosaki Mezumona
+#Include "commands.ahk2"
+#Include "utils_key.ahk2"
+#UseHook
+
+class Emacs
+{
+	static Instance[]
+	{
+		get
+		{
+			static instance := Emacs.New()
+			return instance
+		}
+	}
+
+	static KeyCombinationDuration := 3
+
+	__New()
+	{
+		this._state := this.ResetState()
+		this._lastPushTime := A_NowUTC
+	}
+
+	NextState(name) => (key) => this.%name%(key)
+
+	ResetState()
+	{
+		this._history := ""
+		return this.NextState("Initial")
+	}
+
+	RegisterKeybinds()
+	{
+		HandleInputKey(key, name) => this.Push(key)
+		IgnoreInputKey(name) => {}
+		HandleInputKeyFunc := Func("HandleInputKey")
+		IgnoreInputKeyFunc := Func("IgnoreInputKey")
+
+		VisitKey(vk, keyname)
+		{
+			if (keyname == "")
+			{
+				Hotkey("^" . vk, IgnoreInputKeyFunc)
+			}
+			else
+			{
+				HotKey("^" . vk, HandleInputKeyFunc.Bind("C-" . keyname))
+			}
+		}
+		ForEachKeys(Func("VisitKey"))
+
+		HotKey("^_", HandleInputKeyFunc.Bind("C-_"))
+		HotKey("!v", HandleInputKeyFunc.Bind("M-v"))
+		HotKey("!w", HandleInputKeyFunc.Bind("M-w"))
+	}
+
+	Push(next)
+	{
+		this._history .= next . " "
+		this._state := this._state.Call(next)
+		this._lastPushTime := A_NowUTC
+	}
+
+	Fallback(next)
+	{
+		SoundPlay(A_WinDir . "\Media\ding.wav")
+		ToolTip("The followed key combination is not a command.`n" . this._history)
+		return this.ResetState()
+	}
+
+	Initial(key)
+	{
+		ToolTip()
+
+		if (key == "C-x")
+		{
+			return this.NextState("HandleCx")
+		}
+
+		if (key == "C-h")
+		{
+			Commands.DeleteForward()
+			return this.ResetState()
+		}
+
+		if (key == "C-d")
+		{
+			Commands.DeleteBackward()
+			return this.ResetState()
+		}
+
+		if (key == "C-f")
+		{
+			Commands.MoveRight()
+			return this.ResetState()
+		}
+
+		if (key == "C-b")
+		{
+			Commands.MoveLeft()
+			return this.ResetState()
+		}
+
+		if (key == "C-n")
+		{
+			Commands.MoveDown()
+			return this.ResetState()
+		}
+
+		if (key == "C-p")
+		{
+			Commands.MoveUp()
+			return this.ResetState()
+		}
+
+		if (key == "C-a")
+		{
+			Commands.MoveHead()
+			return this.ResetState()
+		}
+
+		if (key == "C-e")
+		{
+			Commands.MoveTail()
+			return this.ResetState()
+		}
+
+		if (key == "C-v")
+		{
+			Commands.MoveNextPage()
+			return this.ResetState()
+		}
+
+		if (key == "M-v")
+		{
+			Commands.MovePrevPage()
+			return this.ResetState()
+		}
+
+		if (key == "C-j")
+		{
+			Commands.PushEnter()
+			return this.ResetState()
+		}
+
+		if (key == "C-w")
+		{
+			Commands.CutClipBoard()
+			return this.ResetState()
+		}
+
+		if (key == "C-k")
+		{
+			Commands.StartSelection()
+			Commands.MoveTail()
+			Commands.EndSelection()
+			Commands.CutClipBoard()
+			return this.ResetState()
+		}
+
+		if (key == "M-w")
+		{
+			Commands.CopyClipBoard()
+			return this.ResetState()
+		}
+
+		if (key == "C-y")
+		{
+			Commands.PasteClipBoard()
+			return this.ResetState()
+		}
+
+		if (key == "C-_" || key == "C-/")
+		{
+			Commands.Undo()
+			return this.ResetState()
+		}
+
+		if (key == "C-g")
+		{
+			return this.ResetState()
+		}
+
+		return this.Fallback(key)
+	}
+
+	HandleCx(key)
+	{
+		if (A_NowUTC >= this._lastPushTime + Emacs.KeyCombinationDuration)
+		{
+			ToolTip("C-x timeout.")
+			return this.ResetState()
+		}
+
+		if (key == "C-s")
+		{
+			Commands.SaveFile()
+			return this.ResetState()
+		}
+
+		if (key == "C-w")
+		{
+			Commands.SaveFileAs()
+			return this.ResetState()
+		}
+
+		if (key == "C-f")
+		{
+			Commands.OpenFile()
+			return this.ResetState()
+		}
+
+		if (key == "C-k")
+		{
+			Commands.CloseTab()
+			return this.ResetState()
+		}
+
+		if (key == "C-c")
+		{
+			Commands.CloseWindow()
+			return this.ResetState()
+		}
+
+		return this.Fallback(key)
+	}
+}
