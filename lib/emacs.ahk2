@@ -33,10 +33,8 @@ class Emacs
 
 	RegisterKeybinds()
 	{
-		HandleInputKey(key, name) => this.Push(key)
-		IgnoreInputKey(name) => {}
-		HandleInputKeyFunc := Func("HandleInputKey")
-		IgnoreInputKeyFunc := Func("IgnoreInputKey")
+		HandleInputKeyFunc := (key, name) => this.Push(key)
+		IgnoreInputKeyFunc := (name) => {}
 
 		VisitKey(vk, keyname)
 		{
