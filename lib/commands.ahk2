@@ -17,6 +17,11 @@ class Commands
 		Send("{Shift Up}")
 	}
 
+	static Unselect()
+	{
+		Send("{Escape}")
+	}
+
 	static DeleteForward()
 	{
 		Send("{BS}")
@@ -120,5 +125,39 @@ class Commands
 	static Undo()
 	{
 		Send("^z")
+	}
+
+	static Redo()
+	{
+		Send("^+z")
+	}
+
+	static ShowCommandPallet(callback)
+	{
+		commandPallet := Gui.New("AlwaysOnTop -Caption -SysMenu", "AHK Command Palllet")
+
+		commandInput := commandPallet.AddEdit("W256 H24 X0 Y0 -WantReturn")
+		commandInput.SetFont("S14")
+
+		submitButton := commandPallet.AddButton("Default W24 H24 X256 Y0", "Exec")
+
+		OnEscaped(*)
+		{
+			commandPallet.Destroy()
+		}
+		OnLoseFocus(*)
+		{
+			commandPallet.Destroy()
+		}
+		OnSubmited(*)
+		{
+			SetTimer(callback.Bind(commandInput.Value), -16)
+			commandPallet.Destroy()
+		}
+		commandPallet.OnEvent("Escape", Func("OnEscaped"))
+		commandInput.OnEvent("LoseFocus", Func("OnLoseFocus"))
+		submitButton.OnEvent("Click", Func("OnSubmited"))
+
+		commandPallet.Show("W256 H24 Center")
 	}
 }

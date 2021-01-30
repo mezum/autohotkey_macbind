@@ -1,8 +1,8 @@
 ; MIT License
-; Copyright (c) 2020 Kosaki Mezumona
-#Include "commands.ahk2"
-#Include "utils_key.ahk2"
+; Copyright (c) 2020 Kosaki Mezumonax
 #UseHook
+#include "commands.ahk2"
+#include "utils_key.ahk2"
 
 class Emacs
 {
@@ -15,142 +15,175 @@ class Emacs
 		}
 	}
 
-	static KeyCombinationDuration := 3
+	static ToolTipVisibleDuration := 3 ; sec.
+	static ChordWaitingDuration := 3 ; sec.
 
 	__New()
 	{
-		this._state := this.ResetState()
+		this._currentState := this.ResetState()
 		this._lastPushTime := A_NowUTC
 	}
 
-	NextState(name) => (key) => this.%name%(key)
-
-	ResetState()
+	RegisterKeyBinds()
 	{
-		this._history := ""
-		return this.NextState("Initial")
-	}
+		HandleInputKey := (key, *) => this.PushKey(key)
+		IgnoreInputKey := (*) => {}
 
-	RegisterKeybinds()
-	{
-		HandleInputKeyFunc := (key, name) => this.Push(key)
-		IgnoreInputKeyFunc := (name) => {}
-
-		VisitKey(vk, keyname)
+		VisitKeys(vk, keyname)
 		{
 			if (keyname == "")
 			{
-				Hotkey("^" . vk, IgnoreInputKeyFunc)
+				HotKey("<^!+" . vk, IgnoreInputKey)
+				HotKey("<^!" . vk, IgnoreInputKey)
+				HotKey("<^+" . vk, IgnoreInputKey)
+				HotKey("<^" . vk, IgnoreInputKey)
 			}
-			else
+			else if (keyname != "ALT" && keyname != "LALT" && keyname != "RALT")
 			{
-				HotKey("^" . vk, HandleInputKeyFunc.Bind("C-" . keyname))
+				HotKey("<^!+" . vk, HandleInputKey.Bind("C-M-S-" . keyname))
+				HotKey("<^!" . vk, HandleInputKey.Bind("C-M-" . keyname))
+				HotKey("<^+" . vk, HandleInputKey.Bind("C-S-" . keyname))
+				HotKey("<^" . vk, HandleInputKey.Bind("C-" . keyname))
 			}
 		}
-		ForEachKeys(Func("VisitKey"))
+		VirtualKeyCodes.Visit(Func("VisitKeys"))
 
-		HotKey("^_", HandleInputKeyFunc.Bind("C-_"))
-		HotKey("!v", HandleInputKeyFunc.Bind("M-v"))
-		HotKey("!w", HandleInputKeyFunc.Bind("M-w"))
+		HotKey("<^_", HandleInputKey.Bind("C-_"))
+		HotKey("!v", HandleInputKey.Bind("M-v"))
+		HotKey("!w", HandleInputKey.Bind("M-w"))
+		HotKey("!x", HandleInputKey.Bind("M-x"))
 	}
 
-	Push(next)
+	ResetState()
 	{
-		this._history .= next . " "
-		this._state := this._state.Call(next)
+		this._keyHistory := ""
+		this._chordWaiting := false
+		this._currentState := this.NextState("Initial")
+		return this._currentState
+	}
+
+	PushKey(keyname)
+	{
+		this.ClearToolTip(true)
+		this._keyHistory .= keyname . " "
+		this._currentState := this._currentState.Call(keyname)
 		this._lastPushTime := A_NowUTC
 	}
 
-	Fallback(next)
+	NextState(stateName) => (keyname) => this.%stateName%(keyname)
+
+	Fallback(keyname)
 	{
-		SoundPlay(A_WinDir . "\Media\ding.wav")
-		ToolTip("The followed key combination is not a command.`n" . this._history)
+		if (keyname == "C-g")
+		{
+			Commands.EndSelection()
+			Commands.Unselect()
+			return this.ResetState()
+		}
+
+		SoundPlay(A_WinDir . "\Media\Windows Background.wav")
+		ToolTip("The followed key combination is not a command.`n" . this._keyHistory)
+		this.RegisterToolTipCleaner(Emacs.ToolTipVisibleDuration)
 		return this.ResetState()
 	}
 
-	Initial(key)
+	Initial(keyname)
 	{
-		ToolTip()
-
-		if (key == "C-x")
-		{
-			return this.NextState("HandleCx")
-		}
-
-		if (key == "C-h")
-		{
-			Commands.DeleteForward()
-			return this.ResetState()
-		}
-
-		if (key == "C-d")
-		{
-			Commands.DeleteBackward()
-			return this.ResetState()
-		}
-
-		if (key == "C-f")
+		;
+		; Move cursor
+		;
+		if (keyname == "C-f")
 		{
 			Commands.MoveRight()
 			return this.ResetState()
 		}
 
-		if (key == "C-b")
+		if (keyname == "C-b")
 		{
 			Commands.MoveLeft()
 			return this.ResetState()
 		}
 
-		if (key == "C-n")
+		if (keyname == "C-n")
 		{
 			Commands.MoveDown()
 			return this.ResetState()
 		}
 
-		if (key == "C-p")
+		if (keyname == "C-p")
 		{
 			Commands.MoveUp()
 			return this.ResetState()
 		}
 
-		if (key == "C-a")
+		if (keyname == "C-a")
 		{
 			Commands.MoveHead()
 			return this.ResetState()
 		}
 
-		if (key == "C-e")
+		if (keyname == "C-e")
 		{
 			Commands.MoveTail()
 			return this.ResetState()
 		}
 
-		if (key == "C-v")
+		if (keyname == "C-v")
 		{
 			Commands.MoveNextPage()
 			return this.ResetState()
 		}
 
-		if (key == "M-v")
+		if (keyname == "M-v")
 		{
 			Commands.MovePrevPage()
 			return this.ResetState()
 		}
 
-		if (key == "C-j")
+		;
+		; newline
+		;
+		if (keyname == "C-j")
 		{
 			Commands.PushEnter()
 			return this.ResetState()
 		}
 
-		if (key == "C-w")
+		;
+		; Delete
+		;
+		if (keyname == "C-d")
 		{
-			Commands.CutClipBoard()
+			Commands.DeleteBackward()
 			return this.ResetState()
 		}
 
-		if (key == "C-k")
+		if (keyname == "C-h")
 		{
+			Commands.DeleteForward()
+			return this.ResetState()
+		}
+
+		;
+		; Clipboard
+		;
+		if (keyname == "M-w")
+		{
+			Commands.CopyClipBoard()
+			Commands.EndSelection()
+			return this.ResetState()
+		}
+
+		if (keyname == "C-w")
+		{
+			Commands.CutClipBoard()
+			Commands.EndSelection()
+			return this.ResetState()
+		}
+
+		if (keyname == "C-k")
+		{
+			Commands.Unselect()
 			Commands.StartSelection()
 			Commands.MoveTail()
 			Commands.EndSelection()
@@ -158,70 +191,153 @@ class Emacs
 			return this.ResetState()
 		}
 
-		if (key == "M-w")
-		{
-			Commands.CopyClipBoard()
-			return this.ResetState()
-		}
-
-		if (key == "C-y")
+		if (keyname == "C-y")
 		{
 			Commands.PasteClipBoard()
+			Commands.EndSelection()
 			return this.ResetState()
 		}
 
-		if (key == "C-_" || key == "C-/")
+		;
+		; Undo / Redo
+		;
+		if (keyname == "C-/")
 		{
 			Commands.Undo()
 			return this.ResetState()
 		}
 
-		if (key == "C-g")
+		if (keyname == "C-M-/")
 		{
+			Commands.Redo()
 			return this.ResetState()
 		}
 
-		return this.Fallback(key)
+		; 
+		; Region
+		;
+		if (keyname == "C-SPC")
+		{
+			Commands.Unselect()
+			Commands.StartSelection()
+			return this.ResetState()
+		}
+
+		;
+		; Chords
+		;
+		if (keyname == "C-x")
+		{
+			this._chordWaiting := true
+			this.RegisterChordCancellation(Emacs.ChordWaitingDuration)
+			return this.NextState("HandleCx")
+		}
+
+		if (keyname == "M-x")
+		{
+			Commands.ShowCommandPallet((command) => this.ExecuteCommand(command))
+			return this.ResetState()
+		}
+
+		return this.Fallback(keyname)
 	}
 
-	HandleCx(key)
+	HandleCx(keyname)
 	{
-		if (A_NowUTC >= this._lastPushTime + Emacs.KeyCombinationDuration)
-		{
-			ToolTip("C-x timeout.")
-			return this.ResetState()
-		}
-
-		if (key == "C-s")
+		;
+		; Files
+		;
+		if (keyname == "C-s")
 		{
 			Commands.SaveFile()
 			return this.ResetState()
 		}
 
-		if (key == "C-w")
+		if (keyname == "C-w")
 		{
 			Commands.SaveFileAs()
 			return this.ResetState()
 		}
 
-		if (key == "C-f")
+		if (keyname == "C-f")
 		{
 			Commands.OpenFile()
 			return this.ResetState()
 		}
 
-		if (key == "C-k")
+		;
+		; Close
+		;
+		if (keyname == "C-k")
 		{
 			Commands.CloseTab()
 			return this.ResetState()
 		}
 
-		if (key == "C-c")
+		if (keyname == "C-c")
 		{
 			Commands.CloseWindow()
 			return this.ResetState()
 		}
 
-		return this.Fallback(key)
+		return this.Fallback(keyname)
+	}
+
+	ExecuteCommand(command)
+	{
+		if (command == "undo")
+		{
+			Commands.Undo()
+			return
+		}
+		if (command == "redo")
+		{
+			Commands.Undo()
+			return
+		}
+
+		ToolTip("Unknown command: '" . command . "'")
+		this.RegisterToolTipCleaner(Emacs.ToolTipVisibleDuration)
+	}
+
+	RegisterChordCancellation(interval)
+	{
+		CancelChord := () => this.CancelChord()
+		SetTimer(CancelChord, -interval * 1000)
+	}
+
+	CancelChord()
+	{
+		elapsed := Emacs.GetElapsedSeconds(this._lastPushTime)
+		if (!this._chordWaiting || elapsed < Emacs.ChordWaitingDuration)
+		{
+			this.RegisterChordCancellation(Emacs.ChordWaitingDuration - elapsed)
+			return
+		}
+		
+		ToolTip("'" . this._keyHistory . "' is timeout.")
+		this.RegisterToolTipCleaner(Emacs.ToolTipVisibleDuration)
+		this.ResetState()
+	}
+
+	RegisterToolTipCleaner(interval)
+	{
+		ClearToolTip := () => this.ClearToolTip(false)
+		SetTimer(ClearToolTip, -interval * 1000)
+	}
+
+	ClearToolTip(forced := false)
+	{
+		elapsed := Emacs.GetElapsedSeconds(this._lastPushTime)
+		if (!forced && elapsed < Emacs.ToolTipVisibleDuration)
+		{
+			return
+		}
+		ToolTip()
+	}
+
+	static GetElapsedSeconds(t)
+	{
+		return A_NowUTC - t
 	}
 }

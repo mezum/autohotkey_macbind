@@ -1,22 +1,7 @@
 ; MIT License
-; Copyright (c) 2020 Kosaki Mezumona
-#Include "commands.ahk2"
+; Copyright (c) 2020 Kosaki Mezumonax
 #UseHook
-
-~LWin::
-{
-	Mac.Instance.OnLWinKeyDown()
-}
-
-~LWin Up::
-{
-	Mac.Instance.OnLWinKeyUp()
-}
-
-*<#Tab::
-{
-	Mac.Instance.OnWinKeyTabDown()
-}
+#include "commands.ahk2"
 
 class Mac
 {
@@ -31,104 +16,81 @@ class Mac
 
 	__New()
 	{
-		this._taskSwitchable := false
+		this._keyDown := false
 		this._taskSwitching := false
-		this._disableWinKeyStartMenu := false
 	}
 
-	RegisterKeybinds()
+	RegisterKeybinds(commandKey)
 	{
-		this.DisableWinKeyStartMenu()
-		this.WinKeyToTaskSwitch()
-		this.WinKeyToCtrl()
+		OnCommandKeyDown := (*) => this.OnCommandKeyDown()
+		OnCommandKeyUp := (*) => this.OnCommandKeyUp()
+		OnTabKeyDown := (*) => this.OnTabKeyDown()
+		OnShiftOpenBracketDown := (*) => this.OnShiftOpenBracketDown()
+		OnShiftCloseBracketDown := (*) => this.OnShiftCloseBracketDown()
+		HotKey("*" . commandKey, OnCommandKeyDown)
+		HotKey("*" . commandKey . " Up", OnCommandKeyUp)
+		HotKey("Tab", OnTabKeyDown)
+		HotKey("*+vkDB", OnShiftOpenBracketDown)
+		HotKey("*+vkDD", OnShiftCloseBracketDown)
 	}
 
-	DisableWinKeyStartMenu()
+	OnCommandKeyDown()
 	{
-		this._disableWinKeyStartMenu := true
-	}
-
-	WinKeyToTaskSwitch()
-	{
-		this._taskSwitchable := true
-	}
-
-	WinKeyToCtrl()
-	{
-		static keynames := [
-			"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o",
-			"p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
-			"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
-			"vk08", "vk0D",
-			"vk20", "vk21", "vk22", "vk23", "vk24", "vk25", "vk26", "vk27", "vk28", "vk2C", "vk2D", "vk2E",
-			"vk60", "vk61", "vk62", "vk63", "vk64", "vk65", "vk66", "vk67", "vk68",
-			"vk69", "vk6A", "vk6B", "vk6C", "vk6D", "vk6E", "vk6F",
-			"vk70", "vk71", "vk72", "vk73", "vk74", "vk75", "vk76", "vk77", "vk78",
-			"vk79", "vk7A", "vk7B", "vk7C", "vk7D", "vk7E", "vk7F",
-			"vk80", "vk81", "vk82", "vk83", "vk84", "vk85", "vk86", "vk87",
-			"vkBA", "vkBB", "vkBC", "vkBD", "vkBE", "vkBF", "vkC0",
-			"vkDB", "vkDC", "vkDD", "vkDE", "vkDF", "vkE2",
-		]
-
-		RemapKey := (remapped, key) => Send(remapped)
-		
-		for keyname in keynames
+		if (!this._keyDown)
 		{
-			remapped := keyname
-			if (SubStr(keyname, 1, 2) == "vk")
+			Send("{Blind}{RCtrl Down}")
+			this._keyDown := true
+		}
+	}
+
+	OnCommandKeyUp()
+	{
+		if (this._keyDown)
+		{
+			if (this._taskSwitching)
 			{
-				remapped := "{" . keyname . "}"
+				Send("{Blind}{RAlt Up}")
 			}
-			HotKey("<#" . keyname, RemapKey.Bind("^" . remapped))
-			HotKey("<#!" . keyname, RemapKey.Bind("^!" . remapped))
-			HotKey("<#+" . keyname, RemapKey.Bind("^+" . remapped))
-			HotKey("<#!+" . keyname, RemapKey.Bind("^!+" . remapped))
+			else
+			{
+				Send("{Blind}{RCtrl Up}")
+			}
 		}
-
-		SwitchNextTab := (name) => Commands.SwitchNextTab()
-		SwitchPrevTab := (name) => Commands.SwitchPrevTab()
-
-		; Shift+Cmd+[ & Shift+Cmd+]
-		HotKey("<#+vkDB", SwitchPrevTab)
-		HotKey("<#+vkDD", SwitchNextTab)
+		this._keyDown := false
+		this._taskSwitching := false
 	}
 
-	OnLWinKeyDown()
+	OnTabKeyDown()
 	{
-		if (this._disableWinKeyStartMenu)
+		if (this._keyDown && !this._taskSwitching)
 		{
-			Send("{vkFF}")
-		}
-	}
-
-	OnLWinKeyUp()
-	{
-		if (this._taskSwitching)
-		{
-			Send("{Alt Up}")
-			this._taskSwitching := false
-		}
-	}
-
-	OnWinKeyTabDown()
-	{
-		if (!this._taskSwitchable)
-		{
-			return
-		}
-
-		if (!this._taskSwitching)
-		{
-			Send("{Alt Down}")
+			Send("{Blind}{RCtrl Up}{RAlt Down}")
 			this._taskSwitching := true
 		}
-		if (GetKeyState("Shift", "P"))
+		Send("{Blind}{Tab}")
+	}
+
+	OnShiftOpenBracketDown()
+	{
+		if (this._keyDown)
 		{
 			Send("{Shift Down}{Tab}{Shift Up}")
 		}
 		else
 		{
-			Send("{Tab}")
+			Send("{Blind}{vkDD}")
+		}
+	}
+
+	OnShiftCloseBracketDown()
+	{
+		if (this._keyDown)
+		{
+			Send("{Ctrl}{Tab}")
+		}
+		else
+		{
+			Send("{Blind}{vkDB}")
 		}
 	}
 }
