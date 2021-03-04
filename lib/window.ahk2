@@ -1,0 +1,26 @@
+; MIT License
+; Copyright (c) 2021 Kosaki Mezumona
+class WindowMatcher
+{
+	__New()
+	{
+		this._titles := []
+	}
+
+	AddTitle(title)
+	{
+		this._titles.Push(title)
+	}
+
+	MatchActive()
+	{
+		for title in this._titles
+		{
+			if (WinActive(title))
+			{
+				return true
+			}
+		}
+		return false
+	}
+}

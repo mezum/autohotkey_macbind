@@ -1,31 +1,61 @@
 ; MIT License
-; Copyright (c) 2020 Kosaki Mezumonax
+; Copyright (c) 2021 Kosaki Mezumona
 #UseHook
 #include "commands.ahk2"
-#include "utils_key.ahk2"
+#include "key.ahk2"
 
-class Emacs
+class EmacsSimulator
 {
 	static Instance[]
 	{
 		get
 		{
-			static instance := Emacs.New()
+			static instance := EmacsSimulator.New()
 			return instance
 		}
 	}
 
-	static ToolTipVisibleDuration := 3 ; sec.
-	static ChordWaitingDuration := 3 ; sec.
+	ToolTipVisibleDuration[]
+	{
+		get => this._toolTipVisibleDuration
+		set => this._toolTipVisibleDuration = value
+	}
+
+	ChordWaitingDuration[]
+	{
+		get => this._chordWaitingDuration
+		set => this._chordWaitingDuration = value
+	}
+
+	IgnoredWindowMatcher[]
+	{
+		get
+		{
+			if (!this._ignoredWindowMatcher)
+			{
+				this._ignoredWindowMatcher := WindowMatcher.New()
+			}
+			return this._ignoredWindowMatcher
+		}
+		set
+		{
+			this._ignoredWindowMatcher := value
+		}
+	}
 
 	__New()
 	{
 		this._currentState := this.ResetState()
 		this._lastPushTime := A_NowUTC
+		this._toolTipVisibleDuration := 3
+		this._chordWaitingDuration := 3
+		this._ignoredWindowMatcher := ""
 	}
 
 	RegisterKeyBinds()
 	{
+		HotIf((*) => this.IsAbleToOverrideKeys())
+
 		HandleInputKey := (key, *) => this.PushKey(key)
 		IgnoreInputKey := (*) => {}
 
@@ -52,7 +82,11 @@ class Emacs
 		HotKey("!v", HandleInputKey.Bind("M-v"))
 		HotKey("!w", HandleInputKey.Bind("M-w"))
 		HotKey("!x", HandleInputKey.Bind("M-x"))
+
+		HotIf()
 	}
+
+	IsAbleToOverrideKeys() => !(this._ignoredWindowMatcher && this._ignoredWindowMatcher.MatchActive())
 
 	ResetState()
 	{
@@ -83,7 +117,7 @@ class Emacs
 
 		SoundPlay(A_WinDir . "\Media\Windows Background.wav")
 		ToolTip("The followed key combination is not a command.`n" . this._keyHistory)
-		this.RegisterToolTipCleaner(Emacs.ToolTipVisibleDuration)
+		this.RegisterToolTipCleaner(this._toolTipVisibleDuration)
 		return this.ResetState()
 	}
 
@@ -169,15 +203,15 @@ class Emacs
 		;
 		if (keyname == "M-w")
 		{
-			Commands.CopyClipBoard()
 			Commands.EndSelection()
+			Commands.CopyClipBoard()
 			return this.ResetState()
 		}
 
 		if (keyname == "C-w")
 		{
-			Commands.CutClipBoard()
 			Commands.EndSelection()
+			Commands.CutClipBoard()
 			return this.ResetState()
 		}
 
@@ -229,7 +263,7 @@ class Emacs
 		if (keyname == "C-x")
 		{
 			this._chordWaiting := true
-			this.RegisterChordCancellation(Emacs.ChordWaitingDuration)
+			this.RegisterChordCancellation(this._chordWaitingDuration)
 			return this.NextState("HandleCx")
 		}
 
@@ -297,7 +331,7 @@ class Emacs
 		}
 
 		ToolTip("Unknown command: '" . command . "'")
-		this.RegisterToolTipCleaner(Emacs.ToolTipVisibleDuration)
+		this.RegisterToolTipCleaner(this._toolTipVisibleDuration)
 	}
 
 	RegisterChordCancellation(interval)
@@ -308,15 +342,15 @@ class Emacs
 
 	CancelChord()
 	{
-		elapsed := Emacs.GetElapsedSeconds(this._lastPushTime)
-		if (!this._chordWaiting || elapsed < Emacs.ChordWaitingDuration)
+		elapsed := EmacsSimulator.GetElapsedSeconds(this._lastPushTime)
+		if (!this._chordWaiting || elapsed < this._chordWaitingDuration)
 		{
-			this.RegisterChordCancellation(Emacs.ChordWaitingDuration - elapsed)
+			this.RegisterChordCancellation(this._chordWaitingDuration - elapsed)
 			return
 		}
 		
 		ToolTip("'" . this._keyHistory . "' is timeout.")
-		this.RegisterToolTipCleaner(Emacs.ToolTipVisibleDuration)
+		this.RegisterToolTipCleaner(this._toolTipVisibleDuration)
 		this.ResetState()
 	}
 
@@ -328,8 +362,8 @@ class Emacs
 
 	ClearToolTip(forced := false)
 	{
-		elapsed := Emacs.GetElapsedSeconds(this._lastPushTime)
-		if (!forced && elapsed < Emacs.ToolTipVisibleDuration)
+		elapsed := EmacsSimulator.GetElapsedSeconds(this._lastPushTime)
+		if (!forced && elapsed < this._toolTipVisibleDuration)
 		{
 			return
 		}

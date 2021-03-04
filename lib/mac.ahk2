@@ -1,16 +1,32 @@
 ; MIT License
-; Copyright (c) 2020 Kosaki Mezumonax
+; Copyright (c) 2021 Kosaki Mezumona
 #UseHook
 #include "commands.ahk2"
 
-class Mac
+class MacSimulator
 {
 	static Instance[]
 	{
 		get
 		{
-			static instance := Mac.New()
+			static instance := MacSimulator.New()
 			return instance
+		}
+	}
+
+	IgnoredWindowMatcher[]
+	{
+		get
+		{
+			if (!this._ignoredWindowMatcher)
+			{
+				this._ignoredWindowMatcher := WindowMatcher.New()
+			}
+			return this._ignoredWindowMatcher
+		}
+		set
+		{
+			this._ignoredWindowMatcher := value
 		}
 	}
 
@@ -18,21 +34,23 @@ class Mac
 	{
 		this._keyDown := false
 		this._taskSwitching := false
+		this._ignoredWindowMatcher := ""
 	}
 
 	RegisterKeybinds(commandKey)
 	{
-		OnCommandKeyDown := (*) => this.OnCommandKeyDown()
-		OnCommandKeyUp := (*) => this.OnCommandKeyUp()
-		OnTabKeyDown := (*) => this.OnTabKeyDown()
-		OnShiftOpenBracketDown := (*) => this.OnShiftOpenBracketDown()
-		OnShiftCloseBracketDown := (*) => this.OnShiftCloseBracketDown()
-		HotKey("*" . commandKey, OnCommandKeyDown)
-		HotKey("*" . commandKey . " Up", OnCommandKeyUp)
-		HotKey("Tab", OnTabKeyDown)
-		HotKey("*+vkDB", OnShiftOpenBracketDown)
-		HotKey("*+vkDD", OnShiftCloseBracketDown)
+		HotIf((*) => this.IsAbleToOverrideKeys())
+
+		HotKey("*" . commandKey, (*) => this.OnCommandKeyDown())
+		HotKey("*" . commandKey . " Up", (*) => this.OnCommandKeyUp())
+		HotKey("Tab", (*) => this.OnTabKeyDown())
+		HotKey("*+vkDB", (*) => this.OnShiftOpenBracketDown())
+		HotKey("*+vkDD", (*) => this.OnShiftCloseBracketDown())
+
+		HotIf()
 	}
+
+	IsAbleToOverrideKeys() => !(this._ignoredWindowMatcher && this._ignoredWindowMatcher.MatchActive())
 
 	OnCommandKeyDown()
 	{
@@ -78,7 +96,7 @@ class Mac
 		}
 		else
 		{
-			Send("{Blind}{vkDD}")
+			Send("{Blind}{vkDB}")
 		}
 	}
 
@@ -90,7 +108,7 @@ class Mac
 		}
 		else
 		{
-			Send("{Blind}{vkDB}")
+			Send("{Blind}{vkDD}")
 		}
 	}
 }

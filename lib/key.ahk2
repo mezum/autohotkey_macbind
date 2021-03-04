@@ -1,5 +1,5 @@
 ; MIT License
-; Copyright (c) 2020 Kosaki Mezumona
+; Copyright (c) 2021 Kosaki Mezumona
 class VirtualKeyCodes
 {
 	static Visit(visitor)
