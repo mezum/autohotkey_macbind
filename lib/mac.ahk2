@@ -46,6 +46,10 @@ class MacSimulator
 		HotKey("Tab", (*) => this.OnTabKeyDown())
 		HotKey("*+vkDB", (*) => this.OnShiftOpenBracketDown())
 		HotKey("*+vkDD", (*) => this.OnShiftCloseBracketDown())
+		HotKey("vkE2", (*) => Send("_"))
+		HotKey("<^Up", (*) => Send("{RWin Down}{Tab}{RWin Up}"))
+		HotKey("<^Left", (*) => Send("{Blind}{RWin Down}{Left}{RWin Up}"))
+		HotKey("<^Right", (*) => Send("{Blind}{RWin Down}{Right}{RWin Up}"))
 
 		HotIf()
 	}
