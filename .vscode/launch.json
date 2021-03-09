@@ -8,7 +8,7 @@
 			"name": "AutoHotkey Debug",
 			"type": "autohotkey",
 			"request": "launch",
-			"program": "${file}",
+			"program": "${workspaceFolder}/main.ahk2",
 			"runtime": "${workspaceFolder}/bin/AutoHotkeyU64.exe"
 		}
 	]
