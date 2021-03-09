@@ -32,7 +32,7 @@ class MacSimulator
 
 	__New()
 	{
-		this._keyDown := false
+		this._commandKeyDown := false
 		this._taskSwitching := false
 		this._ignoredWindowMatcher := ""
 	}
@@ -46,6 +46,9 @@ class MacSimulator
 		HotKey("Tab", (*) => this.OnTabKeyDown())
 		HotKey("*+vkDB", (*) => this.OnShiftOpenBracketDown())
 		HotKey("*+vkDD", (*) => this.OnShiftCloseBracketDown())
+		HotKey("*+vk33", (*) => this.OnShiftThreeDown())
+		HotKey("*+vk34", (*) => this.OnShiftFourDown())
+		HotKey("*+vk35", (*) => this.OnShiftFiveDown())
 		HotKey("vkE2", (*) => Send("_"))
 		HotKey("<^Up", (*) => Send("{RWin Down}{Tab}{RWin Up}"))
 		HotKey("<^Left", (*) => Send("{Blind}{RWin Down}{Left}{RWin Up}"))
@@ -58,16 +61,16 @@ class MacSimulator
 
 	OnCommandKeyDown()
 	{
-		if (!this._keyDown)
+		if (!this._commandKeyDown)
 		{
 			Send("{Blind}{RCtrl Down}")
-			this._keyDown := true
+			this._commandKeyDown := true
 		}
 	}
 
 	OnCommandKeyUp()
 	{
-		if (this._keyDown)
+		if (this._commandKeyDown)
 		{
 			if (this._taskSwitching)
 			{
@@ -78,13 +81,13 @@ class MacSimulator
 				Send("{Blind}{RCtrl Up}")
 			}
 		}
-		this._keyDown := false
+		this._commandKeyDown := false
 		this._taskSwitching := false
 	}
 
 	OnTabKeyDown()
 	{
-		if (this._keyDown && !this._taskSwitching)
+		if (this._commandKeyDown && !this._taskSwitching)
 		{
 			Send("{Blind}{RCtrl Up}{RAlt Down}")
 			this._taskSwitching := true
@@ -94,7 +97,7 @@ class MacSimulator
 
 	OnShiftOpenBracketDown()
 	{
-		if (this._keyDown)
+		if (this._commandKeyDown)
 		{
 			Send("{Shift Down}{Tab}{Shift Up}")
 		}
@@ -106,13 +109,49 @@ class MacSimulator
 
 	OnShiftCloseBracketDown()
 	{
-		if (this._keyDown)
+		if (this._commandKeyDown)
 		{
 			Send("{Ctrl}{Tab}")
 		}
 		else
 		{
 			Send("{Blind}{vkDD}")
+		}
+	}
+
+	OnShiftThreeDown()
+	{
+		if (this._commandKeyDown)
+		{
+			Commands.CaptureScreen()
+		}
+		else
+		{
+			Send("{Blind}{vk33}")
+		}
+	}
+
+	OnShiftFourDown()
+	{
+		if (this._commandKeyDown)
+		{
+			Commands.CaptureActiveWindow()
+		}
+		else
+		{
+			Send("{Blind}{vk34}")
+		}
+	}
+
+	OnShiftFiveDown()
+	{
+		if (this._commandKeyDown)
+		{
+			Commands.ShowScreenShotTool()
+		}
+		else
+		{
+			Send("{Blind}{vk35}")
 		}
 	}
 }

@@ -132,6 +132,130 @@ class Commands
 		Send("^+z")
 	}
 
+	static CaptureScreen()
+	{
+		Loop (MonitorGetCount())
+		{
+			MonitorGet(A_Index, left, top, right, bottom)
+			Commands.CaptureScreenRect(
+				left,
+				top,
+				right - left,
+				bottom - top,
+				Commands.GenerateScreenShotFilePath("-" . A_Index)
+			)
+		}
+	}
+
+	static CaptureActiveWindow()
+	{
+		activeWindow := WinExist("A")
+		winGetClientPos(x, y, w, h, activeWindow)
+		Commands.CaptureScreenRect(x, y, w, h, Commands.GenerateScreenShotFilePath(""))
+		WinSetTransparent(204, activeWindow)
+		SetTimer((*) => WinSetTransparent("Off", activeWindow), -100)
+	}
+
+	static CaptureScreenRect(x, y, w, h, path)
+	{
+		Commands.ExecutePowerShellCommand(
+			'Add-Type -Assembly System.Drawing;' .
+			'$b=[System.Drawing.Bitmap]::new(' . w . ',' . h . ');' .
+			'$g=[System.Drawing.Graphics]::FromImage($b);' .
+			'$g.CopyFromScreen(' . x . ',' . y . ',0,0,$b.Size);' .
+			'$g.Dispose();' .
+			"$b.Save('" . path . "',[System.Drawing.Imaging.ImageFormat]::Png)",
+			Commands.LibFolderPath
+		)
+	}
+
+	static ShowScreenShotTool()
+	{
+		A_Clipboard := ""
+		RunWait("explorer.exe ms-screenclip:")
+		pid := ProcessWait("ScreenClippingHost.exe", 5.0)
+		if (pid == 0)
+		{
+			return
+		}
+		ProcessWaitClose(pid)
+
+		path := Commands.GenerateScreenShotFilePath("")
+		Commands.ExecutePowerShellCommand(
+			'Add-Type -Assembly System.Drawing;' .
+			'Add-Type -Assembly System.Windows.Forms;' .
+			"$b=[System.Windows.Forms.Clipboard]::GetImage()`n" .
+			'if ($b -ne $null) {' .
+				"$b.Save('" . path . "',[System.Drawing.Imaging.ImageFormat]::Png)" .
+			'}',
+			Commands.LibFolderPath
+		)
+	}
+
+	static GenerateScreenShotFilePath(suffix)
+	{
+		DirCreate(Commands.ScreenShotPath)
+		return (
+			Commands.ScreenShotPath . "\" .
+			A_YYYY . "_" .
+			A_MM . "_" .
+			A_DD . "-" .
+			A_Hour . "_" .
+			A_Min . "_" .
+			A_Sec . "_" .
+			A_MSec .
+			suffix .
+			".png"
+		)
+	}
+
+	static LibFolderPath[]
+	{
+		get
+		{
+			SplitPath(A_LineFile, , dir)
+			return dir
+		}
+	}
+
+	static ScreenShotPath[]
+	{
+		get => Commands.PicturesPath . "\ScreenShots"
+	}
+
+	static DesktopPath[]
+	{
+		get => Commands.GetCommonDirPath(0x10)
+	}
+
+	static DocumentsPath[]
+	{
+		get => Commands.GetCommonDirPath(0x05)
+	}
+
+	static PicturesPath[]
+	{
+		get => Commands.GetCommonDirPath(0x27)
+	}
+
+	static MusicPath[]
+	{
+		get => Commands.GetCommonDirPath(0x0d)
+	}
+
+	static VideoPath[]
+	{
+		get => Commands.GetCommonDirPath(0x0e)
+	}
+
+	static GetCommonDirPath(csidl)
+	{
+		VarSetStrCapacity(path, 512)
+		DllCall("shell32\SHGetFolderPathW", "Ptr", 0, "Int", csidl, "Ptr", 0, "Int", 0, "WStr", path, "HRESULT")
+		VarSetStrCapacity(path, -1)
+		return path
+	}
+
 	static ShowCommandPallet(callback)
 	{
 		commandPallet := Gui.New("AlwaysOnTop -Caption -SysMenu", "AHK Command Palllet")
@@ -159,5 +283,24 @@ class Commands
 		submitButton.OnEvent("Click", Func("OnSubmited"))
 
 		commandPallet.Show("W256 H24 Center")
+	}
+
+	static ExecutePowerShellCommand(command, workingDir)
+	{
+		scriptPath := A_Temp . Format("\ahk_{:X}.txt", Random())
+		scriptFile := FileOpen(scriptPath, "w", "UTF-8")
+		scriptFile.Write(command)
+		scriptFile.Close()
+		result := RunWait(
+			(
+				"powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -Command `"cat -Raw '" .
+				scriptPath .
+				"'|iex`""
+			),
+			workingDir,
+			"Hide"
+		)
+		; FileDelete(scriptPath)
+		return result
 	}
 }
