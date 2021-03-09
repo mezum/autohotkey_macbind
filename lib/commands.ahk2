@@ -300,7 +300,7 @@ class Commands
 			workingDir,
 			"Hide"
 		)
-		; FileDelete(scriptPath)
+		FileDelete(scriptPath)
 		return result
 	}
 }
