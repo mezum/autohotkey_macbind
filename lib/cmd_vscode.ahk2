@@ -77,8 +77,8 @@ class VSCodeCommandExecutor extends CommandExecutor
 		Send("^x")
 		Send("k")
 	}
-	SwitchNextTab() => Send("^{PageDn}")
-	SwitchPrevTab() => Send("^{PageUp}")
+	SwitchNextTab() => Send("^{PgDn}")
+	SwitchPrevTab() => Send("^{PgUp}")
 
 	ShowCommandPalette(*) => Send("^+p")
 }
