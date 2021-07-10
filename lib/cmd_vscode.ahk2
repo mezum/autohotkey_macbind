@@ -37,8 +37,10 @@ class VSCodeCommandExecutor extends CommandExecutor
 	Undo() => Send("^/")
 	Redo() => Send("^+/")
 	UndoCursor() => Send("^u")
+
 	Suggest() => Send("!/")
 	QuickFix() => Send("^.")
+	ToggleComment() => Send("^:")
 
 	Save()
 	{

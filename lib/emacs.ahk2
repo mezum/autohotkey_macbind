@@ -346,6 +346,11 @@ class EmacsSimulator
 			this._command.QuickFix()
 			return this.ResetState()
 		}
+		if (keyname == "C-:")
+		{
+			this._command.ToggleComment()
+			return this.ResetState()
+		}
 
 		;
 		; Chords

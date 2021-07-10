@@ -95,8 +95,10 @@ class CommandExecutor
 	Undo() => Send("^z")
 	Redo() => Send("^+z")
 	UndoCursor() => Send("^z")
+
 	Suggest() => Send("^{Space}")
 	QuickFix() => Send("^{Space}")
+	ToggleComment() => ""
 
 	Save() => Send("^s")
 	SaveAs() => Send("^+s")
