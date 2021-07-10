@@ -3,7 +3,7 @@ These scripts simulate the Command and Control key of macOS.
 
 ## Requirements
 - [AutoHotKey v2](https://www.autohotkey.com/)
-- Remap Win key to F23 on Scancode Map.
+- Remap Win key to F19 on Scancode Map.
 
 ## License
 MIT License.
