@@ -96,7 +96,7 @@ class EmacsSimulator
 		HotIf()
 	}
 
-	IsAbleToOverrideKeys() => this._ignoredWindowMatcher.MatchActive()
+	IsAbleToOverrideKeys() => !this._ignoredWindowMatcher.MatchActive()
 
 	ResetState()
 	{
