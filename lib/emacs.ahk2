@@ -1,46 +1,43 @@
 ; MIT License
 ; Copyright (c) 2021 Kosaki Mezumona
 #UseHook
-#include "commands.ahk2"
+#include "cmd.ahk2"
 #include "key.ahk2"
+#include "window.ahk2"
 
 class EmacsSimulator
 {
-	static Instance[]
+	static Instance[args*]
 	{
 		get
 		{
-			static instance := EmacsSimulator.New()
+			static instance := EmacsSimulator()
 			return instance
 		}
 	}
 
-	ToolTipVisibleDuration[]
+	ToolTipVisibleDuration[args*]
 	{
 		get => this._toolTipVisibleDuration
-		set => this._toolTipVisibleDuration = value
+		set => this._toolTipVisibleDuration := value
 	}
 
-	ChordWaitingDuration[]
+	ChordWaitingDuration[args*]
 	{
 		get => this._chordWaitingDuration
-		set => this._chordWaitingDuration = value
+		set => this._chordWaitingDuration := value
 	}
 
-	IgnoredWindowMatcher[]
+	Command[args*]
 	{
-		get
-		{
-			if (!this._ignoredWindowMatcher)
-			{
-				this._ignoredWindowMatcher := WindowMatcher.New()
-			}
-			return this._ignoredWindowMatcher
-		}
-		set
-		{
-			this._ignoredWindowMatcher := value
-		}
+		get => this._command
+		set => this._command := value
+	}
+
+	IgnoredWindowMatcher[args*]
+	{
+		get => this._ignoredWindowMatcher
+		set => this._ignoredWindowMatcher := value
 	}
 
 	__New()
@@ -49,7 +46,9 @@ class EmacsSimulator
 		this._lastPushTime := A_NowUTC
 		this._toolTipVisibleDuration := 3
 		this._chordWaitingDuration := 3
-		this._ignoredWindowMatcher := ""
+		this._ignoredWindowMatcher := WindowMatcher()
+		this._chordCanceller := () => this.CancelChord()
+		this._commandPaletteHandler := (command) => this.ExecuteCommand(command)
 	}
 
 	RegisterKeyBinds()
@@ -57,36 +56,47 @@ class EmacsSimulator
 		HotIf((*) => this.IsAbleToOverrideKeys())
 
 		HandleInputKey := (key, *) => this.PushKey(key)
-		IgnoreInputKey := (*) => {}
+		IgnoreInputKey := (*) => ""
 
 		VisitKeys(vk, keyname)
 		{
+			if (InStr(keyname, "SHIFT") || InStr(keyname, "CTRL") || InStr(keyname, "ALT"))
+			{
+				return
+			}
+
 			if (keyname == "")
 			{
-				HotKey("<^!+" . vk, IgnoreInputKey)
-				HotKey("<^!" . vk, IgnoreInputKey)
-				HotKey("<^+" . vk, IgnoreInputKey)
 				HotKey("<^" . vk, IgnoreInputKey)
+				HotKey("+<^" . vk, IgnoreInputKey)
+				HotKey("!<^" . vk, IgnoreInputKey)
+				HotKey("!+<^" . vk, IgnoreInputKey)
 			}
-			else if (keyname != "ALT" && keyname != "LALT" && keyname != "RALT")
+			else
 			{
-				HotKey("<^!+" . vk, HandleInputKey.Bind("C-M-S-" . keyname))
-				HotKey("<^!" . vk, HandleInputKey.Bind("C-M-" . keyname))
-				HotKey("<^+" . vk, HandleInputKey.Bind("C-S-" . keyname))
 				HotKey("<^" . vk, HandleInputKey.Bind("C-" . keyname))
+				HotKey("!<^" . vk, HandleInputKey.Bind("C-M-" . keyname))
+				HotKey("+<^" . vk, HandleInputKey.Bind("C-S-" . keyname))
+				HotKey("!+<^" . vk, HandleInputKey.Bind("C-M-S-" . keyname))
 			}
 		}
-		VirtualKeyCodes.Visit(Func("VisitKeys"))
+		VirtualKeyCodes.Visit(VisitKeys)
 
 		HotKey("<^_", HandleInputKey.Bind("C-_"))
+		HotKey("!b", HandleInputKey.Bind("M-b"))
+		HotKey("!d", HandleInputKey.Bind("M-d"))
+		HotKey("!f", HandleInputKey.Bind("M-f"))
+		HotKey("!h", HandleInputKey.Bind("M-h"))
 		HotKey("!v", HandleInputKey.Bind("M-v"))
 		HotKey("!w", HandleInputKey.Bind("M-w"))
 		HotKey("!x", HandleInputKey.Bind("M-x"))
+		HotKey("!+.", HandleInputKey.Bind("M->"))
+		HotKey("!+,", HandleInputKey.Bind("M-<"))
 
 		HotIf()
 	}
 
-	IsAbleToOverrideKeys() => !(this._ignoredWindowMatcher && this._ignoredWindowMatcher.MatchActive())
+	IsAbleToOverrideKeys() => this._ignoredWindowMatcher.MatchActive()
 
 	ResetState()
 	{
@@ -108,10 +118,13 @@ class EmacsSimulator
 
 	Fallback(keyname)
 	{
+		this._searching := false
+
 		if (keyname == "C-g")
 		{
-			Commands.EndSelection()
-			Commands.Unselect()
+			this._command.EndSearch()
+			this._command.Unselect()
+			this._command.PushEscape()
 			return this.ResetState()
 		}
 
@@ -128,49 +141,73 @@ class EmacsSimulator
 		;
 		if (keyname == "C-f")
 		{
-			Commands.MoveRight()
-			return this.ResetState()
-		}
-
-		if (keyname == "C-b")
-		{
-			Commands.MoveLeft()
-			return this.ResetState()
-		}
-
-		if (keyname == "C-n")
-		{
-			Commands.MoveDown()
+			this._command.MoveRight()
 			return this.ResetState()
 		}
 
 		if (keyname == "C-p")
 		{
-			Commands.MoveUp()
+			this._command.MoveUp()
+			return this.ResetState()
+		}
+
+		if (keyname == "C-n")
+		{
+			this._command.MoveDown()
+			return this.ResetState()
+		}
+
+		if (keyname == "C-b")
+		{
+			this._command.MoveLeft()
+			return this.ResetState()
+		}
+
+		if (keyname == "M-f")
+		{
+			this._command.MoveNextWord()
+			return this.ResetState()
+		}
+
+		if (keyname == "M-b")
+		{
+			this._command.MovePrevWord()
 			return this.ResetState()
 		}
 
 		if (keyname == "C-a")
 		{
-			Commands.MoveHead()
+			this._command.MoveLineHead()
 			return this.ResetState()
 		}
 
 		if (keyname == "C-e")
 		{
-			Commands.MoveTail()
+			this._command.MoveLineTail()
 			return this.ResetState()
 		}
 
 		if (keyname == "C-v")
 		{
-			Commands.MoveNextPage()
+			this._command.MoveNextPage()
 			return this.ResetState()
 		}
 
 		if (keyname == "M-v")
 		{
-			Commands.MovePrevPage()
+			this._command.MovePrevPage()
+			return this.ResetState()
+		}
+
+		if (keyname == "M->")
+		{
+			this._command.MoveTail()
+			return this.ResetState()
+		}
+
+		if (keyname == "M-<")
+		{
+			this._command.MoveHead()
 			return this.ResetState()
 		}
 
@@ -179,22 +216,34 @@ class EmacsSimulator
 		;
 		if (keyname == "C-j")
 		{
-			Commands.PushEnter()
+			this._command.PushEnter()
 			return this.ResetState()
 		}
 
 		;
 		; Delete
 		;
-		if (keyname == "C-d")
+		if (keyname == "C-h")
 		{
-			Commands.DeleteBackward()
+			this._command.DeleteForward()
 			return this.ResetState()
 		}
 
-		if (keyname == "C-h")
+		if (keyname == "C-d")
 		{
-			Commands.DeleteForward()
+			this._command.DeleteBackward()
+			return this.ResetState()
+		}
+
+		if (keyname == "M-h")
+		{
+			this._command.DeleteForwardWord()
+			return this.ResetState()
+		}
+
+		if (keyname == "M-d")
+		{
+			this._command.DeleteBackwardWord()
 			return this.ResetState()
 		}
 
@@ -203,32 +252,28 @@ class EmacsSimulator
 		;
 		if (keyname == "M-w")
 		{
-			Commands.EndSelection()
-			Commands.CopyClipBoard()
+			this._command.EndSelection()
+			this._command.Copy()
 			return this.ResetState()
 		}
 
 		if (keyname == "C-w")
 		{
-			Commands.EndSelection()
-			Commands.CutClipBoard()
+			this._command.EndSelection()
+			this._command.Cut()
 			return this.ResetState()
 		}
 
 		if (keyname == "C-k")
 		{
-			Commands.Unselect()
-			Commands.StartSelection()
-			Commands.MoveTail()
-			Commands.EndSelection()
-			Commands.CutClipBoard()
+			this._command.CutLine()
 			return this.ResetState()
 		}
 
 		if (keyname == "C-y")
 		{
-			Commands.PasteClipBoard()
-			Commands.EndSelection()
+			this._command.Paste()
+			this._command.EndSelection()
 			return this.ResetState()
 		}
 
@@ -237,13 +282,19 @@ class EmacsSimulator
 		;
 		if (keyname == "C-/")
 		{
-			Commands.Undo()
+			this._command.Undo()
 			return this.ResetState()
 		}
 
-		if (keyname == "C-M-/")
+		if (keyname == "C-M-/" || keyname == "C-S-/")
 		{
-			Commands.Redo()
+			this._command.Redo()
+			return this.ResetState()
+		}
+
+		if (keyname == "C-u")
+		{
+			this._command.UndoCursor()
 			return this.ResetState()
 		}
 
@@ -252,8 +303,47 @@ class EmacsSimulator
 		;
 		if (keyname == "C-SPC")
 		{
-			Commands.Unselect()
-			Commands.StartSelection()
+			this._command.Unselect()
+			this._command.BeginSelection()
+			return this.ResetState()
+		}
+		if (keyname == "C-M-n")
+		{
+			this._command.SelectNextMatch()
+			return this.ResetState()
+		}
+		if (keyname == "C-M-p")
+		{
+			this._command.SelectPrevMatch()
+			return this.ResetState()
+		}
+
+		;
+		; Search
+		;
+		if (keyname == "C-s")
+		{
+			this._command.SearchNext()
+			return this.ResetState()
+		}
+
+		if (keyname == "C-r")
+		{
+			this._command.SearchPrev()
+			return this.ResetState()
+		}
+
+		;
+		; Intelligence
+		;
+		if (keyname == "C-,")
+		{
+			this._command.Suggest()
+			return this.ResetState()
+		}
+		if (keyname == "C-.")
+		{
+			this._command.QuickFix()
 			return this.ResetState()
 		}
 
@@ -267,9 +357,12 @@ class EmacsSimulator
 			return this.NextState("HandleCx")
 		}
 
+		;
+		; Command Palette
+		;
 		if (keyname == "M-x")
 		{
-			Commands.ShowCommandPallet((command) => this.ExecuteCommand(command))
+			this._command.ShowCommandPalette(this._commandPaletteHandler)
 			return this.ResetState()
 		}
 
@@ -283,19 +376,34 @@ class EmacsSimulator
 		;
 		if (keyname == "C-s")
 		{
-			Commands.SaveFile()
+			this._command.Save()
 			return this.ResetState()
 		}
 
 		if (keyname == "C-w")
 		{
-			Commands.SaveFileAs()
+			this._command.SaveAs()
 			return this.ResetState()
 		}
 
 		if (keyname == "C-f")
 		{
-			Commands.OpenFile()
+			this._command.Open()
+			return this.ResetState()
+		}
+		
+		;
+		; Create
+		;
+		if (keyname == "C-n")
+		{
+			this._command.CreateWindow()
+			return this.ResetState()
+		}
+
+		if (keyname == "C-b")
+		{
+			this._command.CreateTab()
 			return this.ResetState()
 		}
 
@@ -304,13 +412,13 @@ class EmacsSimulator
 		;
 		if (keyname == "C-k")
 		{
-			Commands.CloseTab()
+			this._command.CloseTab()
 			return this.ResetState()
 		}
 
 		if (keyname == "C-c")
 		{
-			Commands.CloseWindow()
+			this._command.CloseWindow()
 			return this.ResetState()
 		}
 
@@ -321,12 +429,12 @@ class EmacsSimulator
 	{
 		if (command == "undo")
 		{
-			Commands.Undo()
+			this._command.Undo()
 			return
 		}
 		if (command == "redo")
 		{
-			Commands.Undo()
+			this._command.Redo()
 			return
 		}
 
@@ -336,8 +444,7 @@ class EmacsSimulator
 
 	RegisterChordCancellation(interval)
 	{
-		CancelChord := () => this.CancelChord()
-		SetTimer(CancelChord, -interval * 1000)
+		SetTimer(this._chordCanceller, interval * -1000)
 	}
 
 	CancelChord()

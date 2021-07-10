@@ -1,0 +1,119 @@
+; MIT License
+; Copyright (c) 2021 Kosaki Mezumona
+#include "cmdpalette.ahk2"
+#include "ss.ahk2"
+
+class CommandExecutorCombiner
+{
+	__New()
+	{
+		this._commands := []
+		this._fallback := CommandExecutor()
+	}
+
+	Add(title, command)
+	{
+		this._commands.Push([title, command])
+	}
+
+	__Call(name, args)
+	{
+		return this._GetActive().%name%(args*)
+	}
+
+	_GetActive()
+	{
+		for entry in this._commands
+		{
+			if (WinActive(entry[1]))
+			{
+				return entry[2]
+			}
+		}
+		return this._fallback
+	}
+}
+
+class CommandExecutor
+{
+	PushEscape() => Send("{Escape}")
+	PushEnter() => Send("{Enter}")
+
+	MoveUp() => Send("{Up}")
+	MoveRight() => Send("{Right}")
+	MoveDown() => Send("{Down}")
+	MoveLeft() => Send("{Left}")
+	MoveNextWord() => Send("^{Right}")
+	MovePrevWord() => Send("^{Left}")
+	MoveLineHead() => Send("{Home}")
+	MoveLineTail() => Send("{End}")
+	MoveNextPage() => Send("{PgDn}")
+	MovePrevPage() => Send("{PgUp}")
+	MoveHead() => Send("^{Home}")
+	MoveTail() => Send("^{End}")
+
+	DeleteForward() => Send("{BS}")
+	DeleteBackward() => Send("{Del}")
+	DeleteForwardWord() => Send("^{BS}")
+	DeleteBackwardWord() => Send("^{DEL}")
+
+	SelectAll() => Send("^a")
+	SelectNextMatch() => ""
+	SelectPrevMatch() => ""
+	BeginSelection() => Send("{Shift Down}")
+	EndSelection() => Send("{Shift Up}")
+	Unselect() => Send("{Shift Up}{Escape}")
+
+	Copy() => Send("^c")
+	Cut() => Send("^x")
+	Paste() => Send("^v")
+	CopyAlternative() => Send("^+c")
+	CutAlternative() => Send("^+x")
+	PasteAlternative() => Send("^+v")
+	CutLine()
+	{
+		Send("{Shift Down}")
+		Send("{End}")
+		Send("{Shift Up}")
+		Send("^c")
+		Send("{Del}")
+	}
+
+	BeginSearch() => Send("^f")
+	EndSearch() => Send("{Esc}")
+	SearchNext()
+	{
+		Send("^f")
+		Send("{Enter}")
+	}
+	SearchPrev()
+	{
+		Send("^f")
+		Send("+{Enter}")
+	}
+
+	Undo() => Send("^z")
+	Redo() => Send("^+z")
+	UndoCursor() => Send("^z")
+	Suggest() => Send("^{Space}")
+	QuickFix() => Send("^{Space}")
+
+	Save() => Send("^s")
+	SaveAs() => Send("^+s")
+	Open() => Send("^o")
+
+	CreateWindow() => Send("^n")
+	CloseWindow() => Send("!{F4}")
+
+	CreateTab() => Send("^t")
+	CloseTab() => Send("^w")
+	ReopenTab() => Send("^+t")
+	SwitchNextTab() => Send("^{Tab}")
+	SwitchPrevTab() => Send("^+{Tab}")
+
+	CaptureScreens() => Screenshot.CaptureScreens()
+	CaptureActiveWindow() => Screenshot.CaptureActiveWindow()
+	CaptureWithScreenshotTools() => Screenshot.CaptureWithScreenshotTools()
+
+	ShowCommandPalette(callback) => CommandPalette.Show(callback)
+}

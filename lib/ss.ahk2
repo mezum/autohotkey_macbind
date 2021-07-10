@@ -1,0 +1,88 @@
+; MIT License
+; Copyright (c) 2021 Kosaki Mezumona
+#include "dir.ahk2"
+#include "pwsh.ahk2"
+
+class Screenshot
+{
+	static CaptureScreens()
+	{
+		Loop (MonitorGetCount())
+		{
+			index := MonitorGet(A_Index, &left, &top, &right, &bottom)
+			Screenshot._CaptureScreenRect(
+				left,
+				top,
+				right - left,
+				bottom - top,
+				Screenshot._GenerateScreenshotFilePath("-" . index)
+			)
+		}
+	}
+
+	static CaptureActiveWindow()
+	{
+		activeWindow := WinExist("A")
+		WinGetClientPos(&x, &y, &w, &h, activeWindow)
+		Screenshot._CaptureScreenRect(x, y, w, h, Screenshot._GenerateScreenshotFilePath(""))
+	}
+
+	static CaptureWithScreenshotTools()
+	{
+		prevClipBoard := ClipboardAll()
+		A_Clipboard := ""
+
+		RunWait("explorer.exe ms-screenclip:")
+		pid := ProcessWait("ScreenClippingHost.exe", 5.0)
+		if (pid == 0)
+		{
+			A_Clipboard := prevClipBoard
+			return
+		}
+		ProcessWaitClose(pid)
+
+		path := Screenshot._GenerateScreenshotFilePath("")
+		PowerShell.Execute(
+			'Add-Type -Assembly System.Drawing;' .
+			'Add-Type -Assembly System.Windows.Forms;' .
+			"$b=[System.Windows.Forms.Clipboard]::GetImage()`n" .
+			'if ($b -ne $null) {' .
+				"$b.Save('" . path . "',[System.Drawing.Imaging.ImageFormat]::Png)" .
+			'}',
+			DirectoryPath.Lib
+		)
+
+		A_Clipboard := prevClipBoard
+	}
+
+	static _CaptureScreenRect(x, y, w, h, path)
+	{
+		PowerShell.Execute(
+			'Add-Type -Assembly System.Drawing;' .
+			'$b=[System.Drawing.Bitmap]::new(' . w . ',' . h . ');' .
+			'$g=[System.Drawing.Graphics]::FromImage($b);' .
+			'$g.CopyFromScreen(' . x . ',' . y . ',0,0,$b.Size);' .
+			'$g.Dispose();' .
+			"$b.Save('" . path . "',[System.Drawing.Imaging.ImageFormat]::Png)",
+			DirectoryPath.Lib
+		)
+	}
+
+	static _GenerateScreenshotFilePath(suffix)
+	{
+		ssDir := DirectoryPath.Screenshots
+		DirCreate(ssDir)
+		return (
+			ssDir . "\" .
+			A_YYYY . "_" .
+			A_MM . "_" .
+			A_DD . "-" .
+			A_Hour . "_" .
+			A_Min . "_" .
+			A_Sec . "_" .
+			A_MSec .
+			suffix .
+			".png"
+		)
+	}
+}

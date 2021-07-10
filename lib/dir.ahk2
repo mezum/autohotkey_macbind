@@ -1,0 +1,54 @@
+; MIT License
+; Copyright (c) 2021 Kosaki Mezumona
+class DirectoryPath
+{
+	static Lib[args*]
+	{
+		get
+		{
+			SplitPath(A_LineFile,, &dir)
+			return dir
+		}
+	}
+
+	static Screenshots[args*]
+	{
+		get => this.Pictures . "\Screenshots"
+	}
+
+	static Desktop[args*]
+	{
+		get => this.CommonDir[0x10]
+	}
+
+	static Documents[args*]
+	{
+		get => this.CommonDir[0x05]
+	}
+
+	static Pictures[args*]
+	{
+		get => this.CommonDir[0x27]
+	}
+
+	static Music[args*]
+	{
+		get => this.CommonDir[0x0d]
+	}
+
+	static Video[args*]
+	{
+		get => this.CommonDir[0x0e]
+	}
+
+	static CommonDir[csidl]
+	{
+		get
+		{
+			VarSetStrCapacity(&path, 512)
+			DllCall("shell32\SHGetFolderPathW", "Ptr", 0, "Int", csidl, "Ptr", 0, "Int", 0, "WStr", path, "HRESULT")
+			VarSetStrCapacity(&path, -1)
+			return path
+		}
+	}
+}

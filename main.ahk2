@@ -1,24 +1,32 @@
 ; MIT License
 ; Copyright (c) 2021 Kosaki Mezumona
-#InstallKeybdHook
 #UseHook
+#include "lib/cmd.ahk2"
+#include "lib/cmd_vscode.ahk2"
 #Include "lib/emacs.ahk2"
 #include "lib/mac.ahk2"
 #include "lib/window.ahk2"
 
+InstallKeybdHook
+
+; preferences for all
+cmd := CommandExecutorCombiner()
+cmd.Add("ahk_exe Code.exe", VSCodeCommandExecutor())
+
 ; preferences for emacs
-emacsIgnored := WindowMatcher.New()
-emacsIgnored.AddTitle("ahk_exe valheim.exe")
 emacsToolTipVisibleDuration := 3  ; seconds
 emacsChordWaitingDuration := 3  ; seconds
+emacsIgnored := WindowMatcher()
+emacsIgnored.AddTitle("ahk_exe valheim.exe")
 
 ; preferences for macOS
 macCommandKey := "vk86"  ; Change win key to F23 by Scancode Map in advance.
-macIgnored := WindowMatcher.New()
+macIgnored := WindowMatcher()
 
 ; Register emacs keybinds
 emacs := EmacsSimulator.Instance
 emacs.RegisterKeybinds()
+emacs.Command := cmd
 emacs.IgnoredWindowMatcher := emacsIgnored
 emacs.ToolTipVisibleDuration := emacsToolTipVisibleDuration
 emacs.ChordWaitingDuration := emacsChordWaitingDuration
@@ -26,4 +34,5 @@ emacs.ChordWaitingDuration := emacsChordWaitingDuration
 ; Register macOS keybinds
 mac := MacSimulator.Instance
 mac.RegisterKeybinds(macCommandKey)
+mac.Command := cmd
 mac.IgnoredWindowMatcher := macIgnored

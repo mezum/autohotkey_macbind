@@ -1,40 +1,37 @@
 ; MIT License
 ; Copyright (c) 2021 Kosaki Mezumona
 #UseHook
-#include "commands.ahk2"
+#include "cmd.ahk2"
+#include "window.ahk2"
 
 class MacSimulator
 {
-	static Instance[]
+	static Instance[args*]
 	{
 		get
 		{
-			static instance := MacSimulator.New()
+			static instance := MacSimulator()
 			return instance
 		}
 	}
 
-	IgnoredWindowMatcher[]
+	Command[args*]
 	{
-		get
-		{
-			if (!this._ignoredWindowMatcher)
-			{
-				this._ignoredWindowMatcher := WindowMatcher.New()
-			}
-			return this._ignoredWindowMatcher
-		}
-		set
-		{
-			this._ignoredWindowMatcher := value
-		}
+		get => this._command
+		set => this._command := value
+	}
+
+	IgnoredWindowMatcher[args*]
+	{
+		get => this._ignoredWindowMatcher
+		set => this._ignoredWindowMatcher := value
 	}
 
 	__New()
 	{
 		this._commandKeyDown := false
 		this._taskSwitching := false
-		this._ignoredWindowMatcher := ""
+		this._ignoredWindowMatcher := WindowMatcher()
 	}
 
 	RegisterKeybinds(commandKey)
@@ -57,7 +54,7 @@ class MacSimulator
 		HotIf()
 	}
 
-	IsAbleToOverrideKeys() => !(this._ignoredWindowMatcher && this._ignoredWindowMatcher.MatchActive())
+	IsAbleToOverrideKeys() => !this._ignoredWindowMatcher.MatchActive()
 
 	OnCommandKeyDown()
 	{
@@ -70,17 +67,8 @@ class MacSimulator
 
 	OnCommandKeyUp()
 	{
-		if (this._commandKeyDown)
-		{
-			if (this._taskSwitching)
-			{
-				Send("{Blind}{RAlt Up}")
-			}
-			else
-			{
-				Send("{Blind}{RCtrl Up}")
-			}
-		}
+		Send("{Blind}{RAlt Up}")
+		Send("{Blind}{RCtrl Up}")
 		this._commandKeyDown := false
 		this._taskSwitching := false
 	}
@@ -99,7 +87,7 @@ class MacSimulator
 	{
 		if (this._commandKeyDown)
 		{
-			Send("{Shift Down}{Tab}{Shift Up}")
+			this._command.SwitchPrevTab()
 		}
 		else
 		{
@@ -111,7 +99,7 @@ class MacSimulator
 	{
 		if (this._commandKeyDown)
 		{
-			Send("{Ctrl}{Tab}")
+			this._command.SwitchNextTab()
 		}
 		else
 		{
@@ -123,7 +111,7 @@ class MacSimulator
 	{
 		if (this._commandKeyDown)
 		{
-			Commands.CaptureScreen()
+			this._command.CaptureScreen()
 		}
 		else
 		{
@@ -135,7 +123,7 @@ class MacSimulator
 	{
 		if (this._commandKeyDown)
 		{
-			Commands.CaptureActiveWindow()
+			this._command.CaptureActiveWindow()
 		}
 		else
 		{
@@ -147,7 +135,7 @@ class MacSimulator
 	{
 		if (this._commandKeyDown)
 		{
-			Commands.ShowScreenShotTool()
+			this._command.CaptureWithScreenshotTools()
 		}
 		else
 		{

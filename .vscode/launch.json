@@ -9,7 +9,7 @@
 			"type": "autohotkey",
 			"request": "launch",
 			"program": "${workspaceFolder}/main.ahk2",
-			"runtime": "${workspaceFolder}/bin/AutoHotkeyU64.exe"
+			"runtime": "${workspaceFolder}/bin/AutoHotkey64.exe"
 		}
 	]
 }

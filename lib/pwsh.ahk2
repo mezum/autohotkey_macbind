@@ -1,0 +1,23 @@
+; MIT License
+; Copyright (c) 2021 Kosaki Mezumona
+class PowerShell
+{
+	static Execute(command, workingDir)
+	{
+		scriptPath := A_Temp . Format("\ahk_{:X}.txt", Random())
+		scriptFile := FileOpen(scriptPath, "w", "UTF-8")
+		scriptFile.Write(command)
+		scriptFile.Close()
+		result := RunWait(
+			(
+				"powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -Command `"cat -Raw '" .
+				scriptPath .
+				"'|iex`""
+			),
+			workingDir,
+			"Hide"
+		)
+		FileDelete(scriptPath)
+		return result
+	}
+}

@@ -1,0 +1,84 @@
+; MIT License
+; Copyright (c) 2021 Kosaki Mezumona
+#Include "cmd.ahk2"
+
+class VSCodeCommandExecutor extends CommandExecutor
+{
+	MoveNextPage() => Send("^v")
+	MovePrevPage() => Send("!v")
+
+	SelectAll()
+	{
+		Send("^x")
+		Send("h")
+	}
+	SelectNextMatch() => Send("^!n")
+	SelectPrevMatch() => Send("^!p")
+	BeginSelection() => Send("^{Space}")
+	EndSelection()
+	{
+	}
+	Unselect() => Send("{Esc}")
+
+	Copy() => Send("^{Insert}")
+	Cut() => Send("+{Delete}")
+	Paste() => Send("+{Insert}")
+	CopyAlternative() => Send("!w")
+	CutAlternative() => Send("^w")
+	PasteAlternative() => Send("^y")
+
+	BeginSearch()
+	{
+	}
+	EndSearch() => Send("^g")
+	SearchNext() => Send("^s")
+	SearchPrev() => Send("^r")
+
+	Undo() => Send("^/")
+	Redo() => Send("^+/")
+	UndoCursor() => Send("^u")
+	Suggest() => Send("!/")
+	QuickFix() => Send("^.")
+
+	Save()
+	{
+		Send("^x")
+		Send("^s")
+	}
+	SaveAs()
+	{
+		Send("^x")
+		Send("^w")
+	}
+	Open()
+	{
+		Send("^x")
+		Send("^f")
+	}
+
+	CreateWindow()
+	{
+		Send("^x")
+		Send("^n")
+	}
+	CloseWindow()
+	{
+		Send("^x")
+		Send("^c")
+	}
+
+	CreateTab()
+	{
+		Send("^x")
+		Send("^b")
+	}
+	CloseTab()
+	{
+		Send("^x")
+		Send("k")
+	}
+	SwitchNextTab() => Send("^{PageDn}")
+	SwitchPrevTab() => Send("^{PageUp}")
+
+	ShowCommandPalette(*) => Send("^+p")
+}
