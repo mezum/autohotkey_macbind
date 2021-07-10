@@ -20,7 +20,7 @@ emacsIgnored := WindowMatcher()
 emacsIgnored.AddTitle("ahk_exe valheim.exe")
 
 ; preferences for macOS
-macCommandKey := "vk86"  ; Change win key to F23 by Scancode Map in advance.
+macCommandKey := "vk82"  ; Change win key to F19 by Scancode Map in advance.
 macIgnored := WindowMatcher()
 
 ; Register emacs keybinds
