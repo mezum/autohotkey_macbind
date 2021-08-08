@@ -38,6 +38,10 @@ class CommandExecutor
 {
 	PushEscape() => Send("{Escape}")
 	PushEnter() => Send("{Enter}")
+	PushCtrlTab() => Send("^{Tab}")
+	PushCtrlAltTab() => Send("^!{Tab}")
+	PushCtrlShiftTab() => Send("^+{Tab}")
+	PushCtrlAltShiftTab() => Send("^!+{Tab}")
 
 	MoveUp() => Send("{Up}")
 	MoveRight() => Send("{Right}")

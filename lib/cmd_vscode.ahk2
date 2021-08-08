@@ -27,9 +27,7 @@ class VSCodeCommandExecutor extends CommandExecutor
 	CutAlternative() => Send("^w")
 	PasteAlternative() => Send("^y")
 
-	BeginSearch()
-	{
-	}
+	BeginSearch() => Send("^s")
 	EndSearch() => Send("^g")
 	SearchNext() => Send("^s")
 	SearchPrev() => Send("^r")

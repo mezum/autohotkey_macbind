@@ -92,6 +92,8 @@ class EmacsSimulator
 		HotKey("!x", HandleInputKey.Bind("M-x"))
 		HotKey("!+.", HandleInputKey.Bind("M->"))
 		HotKey("!+,", HandleInputKey.Bind("M-<"))
+		HotKey("h", HandleInputKey.Bind("h"))
+		HotKey("k", HandleInputKey.Bind("k"))
 
 		HotIf()
 	}
@@ -109,7 +111,14 @@ class EmacsSimulator
 	PushKey(keyname)
 	{
 		this.ClearToolTip(true)
-		this._keyHistory .= keyname . " "
+		if (this._keyHistory == "")
+		{
+			this._keyHistory := keyname
+		}
+		else
+		{
+			this._keyHistory .= keyname . " "
+		}
 		this._currentState := this._currentState.Call(keyname)
 		this._lastPushTime := A_NowUTC
 	}
@@ -119,6 +128,12 @@ class EmacsSimulator
 	Fallback(keyname)
 	{
 		this._searching := false
+
+		if (this._keyHistory == keyname and !(keyname ~= "^(C-|M-)"))
+		{
+			Send(keyname)
+			return this.ResetState()
+		}
 
 		if (keyname == "C-g")
 		{
@@ -353,6 +368,30 @@ class EmacsSimulator
 		}
 
 		;
+		; Passthrough
+		;
+		if (keyname == "C-TAB")
+		{
+			this._command.PushCtrlTab()
+			return this.ResetState()
+		}
+		if (keyname == "C-M-TAB")
+		{
+			this._command.PushCtrlAltTab()
+			return this.ResetState()
+		}
+		if (keyname == "C-S-TAB")
+		{
+			this._command.PushCtrlShiftTab()
+			return this.ResetState()
+		}
+		if (keyname == "C-M-S-TAB")
+		{
+			this._command.PushCtrlAltShiftTab()
+			return this.ResetState()
+		}
+
+		;
 		; Chords
 		;
 		if (keyname == "C-x")
@@ -415,7 +454,7 @@ class EmacsSimulator
 		;
 		; Close
 		;
-		if (keyname == "C-k")
+		if (keyname == "k")
 		{
 			this._command.CloseTab()
 			return this.ResetState()
@@ -424,6 +463,15 @@ class EmacsSimulator
 		if (keyname == "C-c")
 		{
 			this._command.CloseWindow()
+			return this.ResetState()
+		}
+
+		;
+		; Select
+		;
+		if (keyname == "h")
+		{
+			this._command.SelectAll()
 			return this.ResetState()
 		}
 
