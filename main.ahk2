@@ -18,6 +18,7 @@ emacsToolTipVisibleDuration := 3  ; seconds
 emacsChordWaitingDuration := 3  ; seconds
 emacsIgnored := WindowMatcher()
 emacsIgnored.AddTitle("ahk_exe valheim.exe")
+emacsIgnored.AddTitle("ahk_exe studio64.exe")
 
 ; preferences for macOS
 macCommandKey := "vk82"  ; Change win key to F19 by Scancode Map in advance.
