@@ -53,7 +53,7 @@ class EmacsSimulator
 
 	RegisterKeyBinds()
 	{
-		HotIf((*) => this.IsAbleToOverrideKeys())
+		HotIf((keyname) => this.IsAbleToOverrideKeys(keyname))
 
 		HandleInputKey := (key, *) => this.PushKey(key)
 		IgnoreInputKey := (*) => ""
@@ -98,7 +98,10 @@ class EmacsSimulator
 		HotIf()
 	}
 
-	IsAbleToOverrideKeys() => !this._ignoredWindowMatcher.MatchActive()
+	IsAbleToOverrideKeys(keyname)
+	{
+		return !this._ignoredWindowMatcher.MatchActive()
+	}
 
 	ResetState()
 	{

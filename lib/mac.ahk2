@@ -46,6 +46,14 @@ class MacSimulator
 		HotKey("*+vk33", (*) => this.OnShiftThreeDown())
 		HotKey("*+vk34", (*) => this.OnShiftFourDown())
 		HotKey("*+vk35", (*) => this.OnShiftFiveDown())
+		HotKey("vk41", (*) => this.OnAKeyDown())
+		HotKey("vk43", (*) => this.OnCKeyDown())
+		HotKey("vk46", (*) => this.OnFKeyDown())
+		HotKey("vk4E", (*) => this.OnNKeyDown())
+		HotKey("vk4F", (*) => this.OnOKeyDown())
+		HotKey("vk56", (*) => this.OnVKeyDown())
+		HotKey("vk58", (*) => this.OnXKeyDown())
+		HotKey("vk5A", (*) => this.OnZKeyDown())
 		HotKey("vkE2", (*) => Send("_"))
 		HotKey("<^Up", (*) => Send("{RWin Down}{Tab}{RWin Up}"))
 		HotKey("<^Left", (*) => Send("{Blind}{RWin Down}{Left}{RWin Up}"))
@@ -56,19 +64,22 @@ class MacSimulator
 
 	IsAbleToOverrideKeys() => !this._ignoredWindowMatcher.MatchActive()
 
+	PressCommandKey() => Send("{Blind}{RCtrl Down}")
+	ReleaseCommandKey() => Send("{Blind}{RCtrl Up}")
+
 	OnCommandKeyDown()
 	{
+		this.PressCommandKey()
 		if (!this._commandKeyDown)
 		{
-			Send("{Blind}{RCtrl Down}")
 			this._commandKeyDown := true
 		}
 	}
 
 	OnCommandKeyUp()
 	{
+		this.ReleaseCommandKey()
 		Send("{Blind}{RAlt Up}")
-		Send("{Blind}{RCtrl Up}")
 		this._commandKeyDown := false
 		this._taskSwitching := false
 	}
@@ -140,6 +151,130 @@ class MacSimulator
 		else
 		{
 			Send("{Blind}{vk35}")
+		}
+	}
+
+	OnAKeyDown()
+	{
+		if (this._commandKeyDown)
+		{
+			this.ReleaseCommandKey()
+			this._command.SelectAll()
+			this.PressCommandKey()
+		}
+		else
+		{
+			Send("{Blind}{vk41}")
+		}
+	}
+
+	OnCKeyDown()
+	{
+		if (this._commandKeyDown)
+		{
+			this.ReleaseCommandKey()
+			this._command.Copy()
+			this.PressCommandKey()
+		}
+		else
+		{
+			Send("{Blind}{vk43}")
+		}
+	}
+
+	OnFKeyDown()
+	{
+		if (this._commandKeyDown)
+		{
+			this.ReleaseCommandKey()
+			this._command.BeginSearch()
+			this.PressCommandKey()
+		}
+		else
+		{
+			Send("{Blind}{vk46}")
+		}
+	}
+
+	OnNKeyDown()
+	{
+		if (this._commandKeyDown)
+		{
+			this.ReleaseCommandKey()
+			if (GetKeyState("Shift"))
+			{
+				this._command.CreateWindow()
+			}
+			else
+			{
+				this._command.CreateFile()
+			}
+			this.PressCommandKey()
+		}
+		else
+		{
+			Send("{Blind}{vk4E}")
+		}
+	}
+
+	OnOKeyDown()
+	{
+		if (this._commandKeyDown)
+		{
+			this.ReleaseCommandKey()
+			this._command.Open()
+			this.PressCommandKey()
+		}
+		else
+		{
+			Send("{Blind}{vk4F}")
+		}
+	}
+
+	OnVKeyDOwn()
+	{
+		if (this._commandKeyDown)
+		{
+			this.ReleaseCommandKey()
+			this._command.Paste()
+			this.PressCommandKey()
+		}
+		else {
+			Send("{Blind}{vk56}")
+		}
+	}
+
+	OnXKeyDown()
+	{
+		if (this._commandKeyDown)
+		{
+			this.ReleaseCommandKey()
+			this._command.Cut()
+			this.PressCommandKey()
+		}
+		else
+		{
+			Send("{Blind}{vk58}")
+		}
+	}
+
+	OnZKeyDown()
+	{
+		if (this._commandKeyDown)
+		{
+			this.ReleaseCommandKey()
+			if (GetKeyState("Shift"))
+			{
+				this._command.Redo()
+			}
+			else
+			{
+				this._command.Undo()
+			}
+			this.PressCommandKey()
+		}
+		else {
+			Send("{Blind}{vk5A}")
 		}
 	}
 }

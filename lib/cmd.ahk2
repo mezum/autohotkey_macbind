@@ -104,6 +104,7 @@ class CommandExecutor
 	QuickFix() => Send("^{Space}")
 	ToggleComment() => ""
 
+	CreateFile() => Send("^n")
 	Save() => Send("^s")
 	SaveAs() => Send("^+s")
 	Open() => Send("^o")

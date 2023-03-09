@@ -40,6 +40,11 @@ class VSCodeCommandExecutor extends CommandExecutor
 	QuickFix() => Send("^.")
 	ToggleComment() => Send("^:")
 
+	CreateFile()
+	{
+		Send("^x")
+		Send("^b")
+	}
 	Save()
 	{
 		Send("^x")
