@@ -52,6 +52,7 @@ class MacSimulator
 		HotKey("vk4E", (*) => this.OnNKeyDown())
 		HotKey("vk4F", (*) => this.OnOKeyDown())
 		HotKey("vk56", (*) => this.OnVKeyDown())
+		HotKey("vk57", (*) => this.OnWKeyDown())
 		HotKey("vk58", (*) => this.OnXKeyDown())
 		HotKey("vk5A", (*) => this.OnZKeyDown())
 		HotKey("vkE2", (*) => Send("_"))
@@ -70,10 +71,7 @@ class MacSimulator
 	OnCommandKeyDown()
 	{
 		this.PressCommandKey()
-		if (!this._commandKeyDown)
-		{
-			this._commandKeyDown := true
-		}
+		this._commandKeyDown := true
 	}
 
 	OnCommandKeyUp()
@@ -156,7 +154,7 @@ class MacSimulator
 
 	OnAKeyDown()
 	{
-		if (this._commandKeyDown)
+		if (this._commandKeyDown && !GetKeyState("Shift"))
 		{
 			this.ReleaseCommandKey()
 			this._command.SelectAll()
@@ -173,7 +171,14 @@ class MacSimulator
 		if (this._commandKeyDown)
 		{
 			this.ReleaseCommandKey()
-			this._command.Copy()
+			if (GetKeyState("Shift"))
+			{
+				this._command.CopyAlternative()
+			}
+			else
+			{
+				this._command.Copy()
+			}
 			this.PressCommandKey()
 		}
 		else
@@ -184,7 +189,7 @@ class MacSimulator
 
 	OnFKeyDown()
 	{
-		if (this._commandKeyDown)
+		if (this._commandKeyDown && !GetKeyState("Shift"))
 		{
 			this.ReleaseCommandKey()
 			this._command.BeginSearch()
@@ -219,7 +224,7 @@ class MacSimulator
 
 	OnOKeyDown()
 	{
-		if (this._commandKeyDown)
+		if (this._commandKeyDown && !GetKeyState("Shift"))
 		{
 			this.ReleaseCommandKey()
 			this._command.Open()
@@ -236,7 +241,14 @@ class MacSimulator
 		if (this._commandKeyDown)
 		{
 			this.ReleaseCommandKey()
-			this._command.Paste()
+			if (GetKeyState("Shift"))
+			{
+				this._command.PasteAlternative()
+			}
+			else
+			{
+				this._command.Paste()
+			}
 			this.PressCommandKey()
 		}
 		else {
@@ -244,12 +256,32 @@ class MacSimulator
 		}
 	}
 
-	OnXKeyDown()
+	OnWKeyDown()
 	{
-		if (this._commandKeyDown)
+		if (this._commandKeyDown && !GetKeyState("Shift"))
 		{
 			this.ReleaseCommandKey()
-			this._command.Cut()
+			this._command.CloseTab()
+			this.PressCommandKey()
+		}
+		else {
+			Send("{Blind}{vk57}")
+		}
+	}
+
+	OnXKeyDown()
+	{
+		if (this._commandKeyDown && !GetKeyState("Shift"))
+		{
+			this.ReleaseCommandKey()
+			if (GetKeyState("Shift"))
+			{
+				this._command.CutAlternative()
+			}
+			else
+			{
+				this._command.Cut()
+			}
 			this.PressCommandKey()
 		}
 		else
